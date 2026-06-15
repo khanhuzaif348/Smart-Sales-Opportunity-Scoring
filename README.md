@@ -57,7 +57,7 @@ Smart-Sales-Opportunity-Scoring/
 ### Clone Repository
 
 ```bash
-git clone https://github.com/your-username/Smart-Sales-Opportunity-Scoring.git
+git clone https://github.com/khanhuzaif348/Smart-Sales-Opportunity-Scoring.git
 cd Smart-Sales-Opportunity-Scoring
 ```
 
