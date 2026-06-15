@@ -1,110 +1,85 @@
 import streamlit as st
+import joblib
 import pandas as pd
-import pickle
 
-# Page Config
-st.set_page_config(
-    page_title="Lead Quality Predictor",
-    page_icon="📈",
-    layout="wide"
+# Load model
+model = joblib.load("lead_quality_model.pkl")
+
+st.set_page_config(page_title="Smart Sales Opportunity Scoring", layout="centered")
+
+st.title("🎯 Smart Sales Opportunity Scoring")
+st.write("Predict whether a lead is High Potential or Low Potential")
+
+# Inputs
+sales_agent = st.selectbox(
+    "Sales Agent",
+    ['Sales-Agent-2','Sales-Agent-3','Sales-Agent-4',
+     'Sales-Agent-5','Sales-Agent-6','Sales-Agent-7',
+     'Sales-Agent-8','Sales-Agent-9','Sales-Agent-10',
+     'Sales-Agent-11','Sales-Agent-12']
 )
 
-st.title("📈 AI Sales Lead Quality Predictor")
-st.write("Upload your sales lead dataset and predict lead status.")
-
-# Load Model
-@st.cache_resource
-def load_model():
-    with open("lead_quality_model.pkl", "rb") as file:
-        model = pickle.load(file)
-    return model
-
-model = load_model()
-
-# File Upload
-uploaded_file = st.file_uploader(
-    "Upload CSV File",
-    type=["csv"]
+location = st.selectbox(
+    "Location",
+    ['Bangalore','Others','Trivandrum','Hyderabad',
+     'Chennai','Uk','Usa','Delhi','Uae','Mumbai',
+     'Kolkata','Singapore','Pune','Australia',
+     'Europe','Malaysia']
 )
 
-if uploaded_file:
+delivery_mode = st.selectbox(
+    "Delivery Mode",
+    ['Mode-1','Mode-2','Mode-3','Mode-4','Mode-5']
+)
 
-    df = pd.read_csv(uploaded_file)
+source_clean = st.selectbox(
+    "Lead Source",
+    ['Live Chat','Call','Website','By Recommendation',
+     'Customer Referral','Email','Existing Customer',
+     'Us Website','Justdial','Campaign','Other',
+     'Crm Form','Sms Campaign','Personal Contact']
+)
 
-    st.subheader("Dataset Preview")
-    st.dataframe(df.head())
+is_international = st.selectbox(
+    "International Lead",
+    [0,1]
+)
 
-    st.subheader("Dataset Information")
+month = st.selectbox(
+    "Month",
+    [4,5,6,7,8,9,10,11]
+)
 
-    col1, col2, col3 = st.columns(3)
+day = st.slider(
+    "Day",
+    min_value=1,
+    max_value=31,
+    value=15
+)
 
-    with col1:
-        st.metric("Rows", df.shape[0])
+hour = st.slider(
+    "Hour",
+    min_value=0,
+    max_value=23,
+    value=12
+)
 
-    with col2:
-        st.metric("Columns", df.shape[1])
+if st.button("Predict Lead Quality"):
 
-    with col3:
-        st.metric("Missing Values", df.isnull().sum().sum())
+    input_df = pd.DataFrame({
+        'Sales_Agent':[sales_agent],
+        'Location':[location],
+        'Delivery_Mode':[delivery_mode],
+        'Source_Clean':[source_clean],
+        'Is_International':[is_international],
+        'Month':[month],
+        'Day':[day],
+        'Hour':[hour]
+    })
 
-    # Data Cleaning
-    df.fillna("Unknown", inplace=True)
+    prediction = model.predict(input_df)
 
-    st.subheader("Lead Source Distribution")
-
-    if "Source" in df.columns:
-        st.bar_chart(df["Source"].value_counts())
-
-    st.subheader("Lead Status Distribution")
-
-    if "Status" in df.columns:
-        st.bar_chart(df["Status"].value_counts())
-
-    # Prediction Section
-    st.subheader("Lead Prediction")
-
-    feature_columns = [
-        "Source",
-        "Sales_Agent",
-        "Location",
-        "Delivery_Mode"
-    ]
-
-    if all(col in df.columns for col in feature_columns):
-
-        X = df[feature_columns]
-
-        predictions = model.predict(X)
-
-        df["Predicted_Status"] = predictions
-
-        st.success("Prediction Completed Successfully")
-
-        st.dataframe(
-            df[
-                [
-                    "Created",
-                    "Source",
-                    "Sales_Agent",
-                    "Delivery_Mode",
-                    "Predicted_Status"
-                ]
-            ]
-        )
-
-        csv = df.to_csv(index=False).encode("utf-8")
-
-        st.download_button(
-            label="📥 Download Predictions",
-            data=csv,
-            file_name="lead_predictions.csv",
-            mime="text/csv"
-        )
-
+    if prediction[0] == 1:
+        st.success("🔥 High Potential Lead")
     else:
-        st.error(
-            f"Required columns missing: {feature_columns}"
-        )
-
-else:
-    st.info("Please upload a CSV file to begin.")
+        st.error("⚠️ Low Potential Lead")
